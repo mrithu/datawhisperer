@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataWhisperer — Natural Language Database Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b0f;
+    --surface: #0e1318;
+    --surface2: #131920;
+    --surface3: #1a2330;
+    --border: #1e2d3d;
+    --border2: #243444;
+    --accent: #00e5ff;
+    --accent2: #00b4cc;
+    --accent-dim: rgba(0, 229, 255, 0.08);
+    --accent-glow: rgba(0, 229, 255, 0.15);
+    --gold: #f5c842;
+    --gold-dim: rgba(245, 200, 66, 0.1);
+    --green: #00ff88;
+    --green-dim: rgba(0, 255, 136, 0.08);
+    --red: #ff4d6d;
+    --text: #e2eaf4;
+    --text-2: #8ba3bc;
+    --text-3: #4d6478;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-serif: 'Instrument Serif', serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    overflow: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radial glow top-left */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,229,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 60px 1fr;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── HEADER ─────────────────────────────────── */
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8, 11, 15, 0.9);
+    backdrop-filter: blur(12px);
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(0,229,255,0.4);
+  }
+
+  .logo-text {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .header-badge {
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: var(--font-display);
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ─── SIDEBAR ────────────────────────────────── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 12px;
+  }
+
+  /* Schema panel */
+  .schema-tables {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .schema-table {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .schema-table:hover { border-color: var(--border2); }
+  .schema-table.active { border-color: var(--accent); }
+
+  .schema-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--surface2);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .schema-table.active .schema-table-header {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .table-icon { font-size: 13px; }
+
+  .schema-table-cols {
+    display: none;
+    padding: 8px 10px;
+    gap: 4px;
+    flex-direction: column;
+  }
+
+  .schema-table.active .schema-table-cols { display: flex; }
+
+  .col-tag {
+    font-size: 10px;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .col-tag::before {
+    content: '';
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--border2);
+    flex-shrink: 0;
+  }
+
+  /* Suggested queries */
+  .suggestions {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .suggestions::-webkit-scrollbar { width: 4px; }
+  .suggestions::-webkit-scrollbar-track { background: transparent; }
+  .suggestions::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .suggestion-chip {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 11.5px;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.4;
+    background: transparent;
+    text-align: left;
+    font-family: var(--font-mono);
+    width: 100%;
+  }
+
+  .suggestion-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+    transform: translateX(2px);
+  }
+
+  /* Activity log */
+  .activity-log {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .activity-log::-webkit-scrollbar { width: 3px; }
+  .activity-log::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .log-item {
+    font-size: 10px;
+    color: var(--text-3);
+    padding: 3px 0;
+    display: flex;
+    gap: 8px;
+    font-family: var(--font-mono);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .log-time { color: var(--accent); opacity: 0.6; flex-shrink: 0; }
+  .log-text { flex: 1; }
+
+  /* ─── MAIN CHAT AREA ─────────────────────────── */
+  .chat-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* MCP Activity bar */
+  .mcp-bar {
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    font-size: 11px;
+    color: var(--text-3);
+    min-height: 36px;
+    overflow: hidden;
+  }
+
+  .mcp-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    color: var(--text-2);
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .mcp-events {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .mcp-event {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    animation: slideIn 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .mcp-event.tool {
+    background: var(--gold-dim);
+    border: 1px solid rgba(245,200,66,0.2);
+    color: var(--gold);
+  }
+
+  .mcp-event.sql {
+    background: var(--green-dim);
+    border: 1px solid rgba(0,255,136,0.2);
+    color: var(--green);
+  }
+
+  /* Messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .messages::-webkit-scrollbar { width: 5px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Welcome screen */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    text-align: center;
+    padding: 40px;
+    gap: 20px;
+    animation: fadeUp 0.6s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-glyph {
+    font-size: 52px;
+    line-height: 1;
+    filter: drop-shadow(0 0 20px rgba(0,229,255,0.4));
+  }
+
+  .welcome-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 32px;
+    letter-spacing: -1px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .welcome-title em {
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .welcome-sub {
+    font-size: 14px;
+    color: var(--text-2);
+    max-width: 460px;
+    line-height: 1.6;
+  }
+
+  .welcome-stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+  }
+
+  .stat-card {
+    padding: 14px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    text-align: center;
+    min-width: 100px;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--accent);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* Message bubbles */
+  .message {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: fadeUp 0.3s ease;
+    max-width: 880px;
+  }
+
+  .message.user { align-items: flex-end; align-self: flex-end; }
+  .message.agent { align-items: flex-start; align-self: flex-start; width: 100%; }
+
+  .message-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .message-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .message.user .message-avatar {
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+  }
+
+  .message.agent .message-avatar {
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(0,229,255,0.3);
+  }
+
+  .message-bubble {
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    line-height: 1.65;
+    font-size: 14px;
+  }
+
+  .message.user .message-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-bottom-right-radius: 4px;
+    max-width: 560px;
+  }
+
+  .message.agent .message-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    width: 100%;
+  }
+
+  /* Markdown-like styling inside agent bubbles */
+  .message-bubble strong { color: var(--accent); font-weight: 500; }
+  .message-bubble em { color: var(--gold); font-style: normal; }
+
+  .message-bubble h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  .message-bubble h3:first-child { margin-top: 0; }
+
+  /* SQL block inside messages */
+  .sql-block {
+    background: #050810;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--green);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+  }
+
+  .sql-block-label {
+    font-size: 9px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    opacity: 0.6;
+    margin-bottom: 6px;
+  }
+
+  /* Data table */
+  .data-table-wrap {
+    overflow-x: auto;
+    margin: 10px 0;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  .data-table th {
+    background: var(--surface2);
+    color: var(--text-2);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Insight highlight */
+  .insight-box {
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin: 8px 0;
+    font-size: 14px;
+    color: var(--accent);
+    line-height: 1.5;
+  }
+
+  /* Thinking indicator */
+  .thinking {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: fit-content;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .thinking-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .thinking-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bounce 1.2s infinite;
+  }
+
+  .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  .thinking-text {
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  /* ─── INPUT AREA ─────────────────────────────── */
+  .input-area {
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .input-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  #user-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    resize: none;
+    max-height: 120px;
+    line-height: 1.6;
+  }
+
+  #user-input::placeholder { color: var(--text-3); }
+
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: var(--bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-size: 16px;
+  }
+
+  .send-btn:hover { background: #00ccee; transform: scale(1.05); }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+
+  .input-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-3);
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+    font-family: var(--font-display);
+  }
+
+  .input-hint kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-2);
+  }
+
+  /* Formatted response content */
+  .response-content { white-space: pre-wrap; word-break: break-word; }
+  .response-content p { margin-bottom: 8px; }
+  .response-content ul, .response-content ol { padding-left: 18px; margin-bottom: 8px; }
+  .response-content li { margin-bottom: 4px; }
+
+  /* Scrollbar for messages */
+  .messages { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+  /* Animations */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .loading-bar {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 1px;
+    margin-bottom: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔮</div>
+      <span class="logo-text">Data<span>Whisperer</span></span>
+    </div>
+    <span class="header-badge">Natural Language → SQL Intelligence</span>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span>SQLite MCP · Live</span>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Database Schema</div>
+      <div class="schema-tables" id="schema-tables">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="sidebar-label" style="padding: 16px 16px 8px; font-size:10px; letter-spacing:2px; font-family: var(--font-display); font-weight:700; color:var(--text-3); text-transform:uppercase;">Try Asking</div>
+    <div class="suggestions" id="suggestions">
+      <button class="suggestion-chip" onclick="fillQuery(this)">Which city generates the most revenue?</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Top 5 best-selling products this month</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Average order value by payment method</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Which category has the highest profit margin?</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Customers who haven't ordered in 90 days</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Monthly revenue trend for last 6 months</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Top 10 customers by lifetime value</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Return rate by product category</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Which products are low on stock (under 20 units)?</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Revenue breakdown by customer tier</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Most popular payment method by state</button>
+      <button class="suggestion-chip" onclick="fillQuery(this)">Cancelled orders count and value last quarter</button>
+    </div>
+
+    <div class="activity-log" id="activity-log">
+      <div class="sidebar-label" style="margin-bottom:8px;">MCP Activity</div>
+      <div class="log-item">
+        <span class="log-time">--:--</span>
+        <span class="log-text">Waiting for queries...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CHAT -->
+  <main class="chat-area">
+    <!-- MCP activity bar -->
+    <div class="mcp-bar">
+      <span class="mcp-label">⚡ MCP</span>
+      <div class="mcp-events" id="mcp-events">
+        <span style="color: var(--text-3); font-size:11px;">No active tool calls</span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-glyph">🔮</div>
+        <h1 class="welcome-title">Ask your data<br><em>anything.</em></h1>
+        <p class="welcome-sub">DataWhisperer connects to your live e-commerce database via the SQLite MCP server. Ask questions in plain English — watch it translate to SQL and surface real insights.</p>
+        <div class="welcome-stats">
+          <div class="stat-card">
+            <span class="stat-value">3,500</span>
+            <span class="stat-label">Orders</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">800</span>
+            <span class="stat-label">Customers</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">37</span>
+            <span class="stat-label">Products</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">12</span>
+            <span class="stat-label">Cities</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea
+          id="user-input"
+          rows="1"
+          placeholder="Ask anything about your data... e.g. 'Which city had the highest revenue last month?'"
+          oninput="autoResize(this)"
+          onkeydown="handleKey(event)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send (Enter)">➤</button>
+      </div>
+      <div class="input-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+let sessionId = null;
+let isLoading = false;
+
+// ── Init ──────────────────────────────────────────
+async function init() {
+  await loadSchema();
+  await createSession();
+}
+
+async function createSession() {
+  try {
+    const res = await fetch(`${API_BASE}/session/new`, { method: 'POST' });
+    const data = await res.json();
+    sessionId = data.session_id;
+  } catch (e) {
+    console.error('Session init failed', e);
+  }
+}
+
+async function loadSchema() {
+  try {
+    const res = await fetch(`${API_BASE}/schema`);
+    const data = await res.json();
+    renderSchema(data.tables);
+  } catch (e) {
+    console.error('Schema load failed', e);
+  }
+}
+
+function renderSchema(tables) {
+  const container = document.getElementById('schema-tables');
+  container.innerHTML = tables.map((t, i) => `
+    <div class="schema-table ${i===0?'active':''}" onclick="toggleTable(this)">
+      <div class="schema-table-header">
+        <span><span class="table-icon">▦</span> ${t.name}</span>
+        <span style="font-size:10px;color:var(--text-3)">${t.columns.length} cols</span>
+      </div>
+      <div class="schema-table-cols">
+        ${t.columns.map(c => `<div class="col-tag">${c}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTable(el) {
+  document.querySelectorAll('.schema-table').forEach(t => t.classList.remove('active'));
+  el.classList.toggle('active');
+}
+
+// ── Input helpers ─────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function fillQuery(btn) {
+  const input = document.getElementById('user-input');
+  input.value = btn.textContent;
+  input.focus();
+  autoResize(input);
+}
+
+// ── Messaging ─────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  // Hide welcome
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  appendUserMessage(text);
+  const thinkingEl = appendThinking();
+  clearMcpBar();
+
+  try {
+    const response = await fetch(`${API_BASE}/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, session_id: sessionId }),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let agentText = '';
+    let sqlQueries = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+
+        try {
+          const event = JSON.parse(raw);
+
+          if (event.type === 'tool_call') {
+            addMcpEvent(event.tool, event.args);
+            addActivityLog(event.tool, event.args);
+          }
+
+          if (event.type === 'response') {
+            agentText = event.text;
+            sqlQueries = event.sql_queries || [];
+            if (event.session_id) sessionId = event.session_id;
+          }
+
+          if (event.type === 'error') {
+            agentText = `⚠️ Error: ${event.message}`;
+          }
+        } catch (_) {}
+      }
+    }
+
+    thinkingEl.remove();
+    if (agentText) {
+      appendAgentMessage(agentText, sqlQueries);
+    }
+
+  } catch (err) {
+    thinkingEl.remove();
+    appendAgentMessage(`⚠️ Connection error: ${err.message}`, []);
+  } finally {
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+function appendUserMessage(text) {
+  const msgs = document.getElementById('messages');
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const el = document.createElement('div');
+  el.className = 'message user';
+  el.innerHTML = `
+    <div class="message-meta" style="flex-direction:row-reverse">
+      <div class="message-avatar">👤</div>
+      <span>${now}</span>
+    </div>
+    <div class="message-bubble">${escHtml(text)}</div>
+  `;
+  msgs.appendChild(el);
+  scrollBottom();
+}
+
+function appendThinking() {
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'message agent';
+  el.innerHTML = `
+    <div class="message-meta">
+      <div class="message-avatar">🔮</div>
+      <span>DataWhisperer</span>
+    </div>
+    <div class="thinking">
+      <div class="thinking-dots">
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      </div>
+      <span class="thinking-text">Querying database via MCP...</span>
+    </div>
+  `;
+  msgs.appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function appendAgentMessage(text, sqlQueries) {
+  const msgs = document.getElementById('messages');
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const el = document.createElement('div');
+  el.className = 'message agent';
+
+  const formattedText = formatResponse(text);
+
+  let sqlHtml = '';
+  if (sqlQueries && sqlQueries.length > 0) {
+    sqlHtml = sqlQueries.map(sql => `
+      <div style="margin-top:10px">
+        <div class="sql-block-label">▦ SQL Executed via MCP</div>
+        <div class="sql-block">${escHtml(sql)}</div>
+      </div>
+    `).join('');
+  }
+
+  el.innerHTML = `
+    <div class="message-meta">
+      <div class="message-avatar">🔮</div>
+      <span>DataWhisperer · ${now}</span>
+    </div>
+    <div class="message-bubble">
+      <div class="response-content">${formattedText}</div>
+      ${sqlHtml}
+    </div>
+  `;
+  msgs.appendChild(el);
+  scrollBottom();
+}
+
+function formatResponse(text) {
+  // Format markdown-ish response
+  return text
+    // Bold
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italics
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Headers
+    .replace(/^## (.*)/gm, '<h3>$1</h3>')
+    // Code blocks (SQL)
+    .replace(/```sql\n?([\s\S]*?)```/g, (_, sql) => `
+      <div class="sql-block-label">▦ SQL</div>
+      <div class="sql-block">${escHtml(sql.trim())}</div>
+    `)
+    // Inline code
+    .replace(/`([^`]+)`/g, `<code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:12px;color:var(--accent)">\$1</code>`)
+    // Bullet points
+    .replace(/^[-•] (.+)/gm, '<li>$1</li>')
+    // Numbered lists
+    .replace(/^\d+\. (.+)/gm, '<li>$1</li>')
+    // Paragraphs (double newline)
+    .replace(/\n\n/g, '</p><p>')
+    // Single newlines
+    .replace(/\n/g, '<br>');
+}
+
+// ── MCP Activity Bar ──────────────────────────────
+function clearMcpBar() {
+  const bar = document.getElementById('mcp-events');
+  bar.innerHTML = '<span style="color:var(--text-3);font-size:11px;animation:fadeUp 0.3s ease">Processing...</span>';
+}
+
+function addMcpEvent(tool, args) {
+  const bar = document.getElementById('mcp-events');
+  if (bar.querySelector('span')) bar.innerHTML = '';
+
+  const isSql = tool === 'read_query';
+  const label = isSql
+    ? `⚡ ${tool}: ${truncate(args.query || '', 40)}`
+    : `🔧 ${tool}`;
+
+  const el = document.createElement('div');
+  el.className = `mcp-event ${isSql ? 'sql' : 'tool'}`;
+  el.textContent = label;
+  bar.appendChild(el);
+
+  // Auto-remove after 8s
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
+}
+
+function addActivityLog(tool, args) {
+  const log = document.getElementById('activity-log');
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const desc = tool === 'read_query'
+    ? truncate(args.query || '', 38)
+    : `${tool}(${Object.keys(args).join(', ')})`;
+
+  // Remove "waiting" message
+  const waiting = log.querySelector('.log-item');
+  if (waiting && waiting.textContent.includes('Waiting')) waiting.remove();
+
+  const el = document.createElement('div');
+  el.className = 'log-item';
+  el.innerHTML = `<span class="log-time">${now}</span><span class="log-text">${escHtml(desc)}</span>`;
+  log.insertBefore(el, log.children[1]);
+
+  // Cap at 10 items
+  while (log.querySelectorAll('.log-item').length > 10) {
+    log.lastChild.remove();
+  }
+}
+
+// ── Utilities ─────────────────────────────────────
+function scrollBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function truncate(str, n) {
+  return str.length > n ? str.slice(0, n) + '…' : str;
+}
+
+// ── Boot ──────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
