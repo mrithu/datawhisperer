@@ -2,6 +2,8 @@
 ### Natural Language Database Intelligence Agent
 *Built with Google ADK + SQLite MCP Server*
 
+my public cloudrun: https://datawhisperer-qfjkxz3y5a-uc.a.run.app/
+
 ---
 
 DataWhisperer is an AI agent that lets you query a live SQLite e-commerce database in plain English. It uses the **Model Context Protocol (MCP)** to connect to an `mcp-server-sqlite` instance, translates your questions into SQL, executes them, and returns sharp business insights — all through a beautiful dark terminal-style UI.
